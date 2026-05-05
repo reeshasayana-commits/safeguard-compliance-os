@@ -1,0 +1,40 @@
+/* RisksPage — Scoped module styles */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.header > :first-child {
+  flex: 1;
+}
+
+.headerAction {
+  flex-shrink: 0;
+  padding-top: var(--space-4);
+}
+
+.tableWrapper {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.monospace {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
+}
+
+.riskTitle {
+  font-weight: var(--font-weight-medium);
+}

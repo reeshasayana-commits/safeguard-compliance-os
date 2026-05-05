@@ -1,0 +1,66 @@
+/* StatusBadge — Scoped module styles */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-family);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+/* ── Dot indicator ──────────────────────────────────── */
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Variants ───────────────────────────────────────── */
+
+.success {
+  background-color: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+.success .dot {
+  background-color: var(--color-success);
+}
+
+.warning {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+.warning .dot {
+  background-color: var(--color-warning);
+}
+
+.danger {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+.danger .dot {
+  background-color: var(--color-danger);
+}
+
+.info {
+  background-color: var(--color-info-bg);
+  color: var(--color-info-text);
+}
+.info .dot {
+  background-color: var(--color-info);
+}
+
+.neutral {
+  background-color: #F1F5F9;
+  color: #475569;
+}
+.neutral .dot {
+  background-color: #94A3B8;
+}

@@ -1,0 +1,1 @@
+export { RiskDetailModal } from './RiskDetailModal';

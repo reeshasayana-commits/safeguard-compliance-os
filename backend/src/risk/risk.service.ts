@@ -1,0 +1,89 @@
+// ============================================================================
+// RiskService — CRUD + workflow operations for the Risk entity
+// ============================================================================
+
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Risk } from './entities/risk.entity';
+import { CreateRiskDto } from './dto/create-risk.dto';
+import { RiskStatus } from '../common/enums';
+import { VALID_TRANSITIONS } from './validators/workflow-transition.pipe';
+
+@Injectable()
+export class RiskService {
+  constructor(
+    @InjectRepository(Risk)
+    private readonly riskRepository: Repository<Risk>,
+  ) {}
+
+  /**
+   * Fetch all risks with related Location and Audit eagerly loaded.
+   */
+  async findAll(): Promise<Risk[]> {
+    return this.riskRepository.find({
+      relations: ['location', 'audit'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Fetch a single risk by primary key.
+   */
+  async findOne(id: string): Promise<Risk> {
+    const risk = await this.riskRepository.findOne({
+      where: { id },
+      relations: ['location', 'audit'],
+    });
+    if (!risk) {
+      throw new NotFoundException(`Risk with ID "${id}" not found`);
+    }
+    return risk;
+  }
+
+  /**
+   * Create a new risk from a validated DTO.
+   * Generates a sequential human-readable riskId.
+   */
+  async create(dto: CreateRiskDto): Promise<Risk> {
+    const count = await this.riskRepository.count();
+    const riskId = `RSK-${new Date().getFullYear()}-${String(count + 100).padStart(4, '0')}`;
+
+    const risk = this.riskRepository.create({
+      ...dto,
+      riskId,
+      status: RiskStatus.OPEN,
+      dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+    });
+
+    return this.riskRepository.save(risk);
+  }
+
+  /**
+   * Advance a risk's workflow status.
+   * The WorkflowTransitionPipe has already validated the transition is legal
+   * before this method is called.
+   */
+  async updateStatus(id: string, targetStatus: RiskStatus): Promise<Risk> {
+    const risk = await this.findOne(id);
+
+    // Double-check: defensive validation (pipe already checked, but defense-in-depth)
+    const allowedTargets = VALID_TRANSITIONS[risk.status];
+    if (!allowedTargets?.includes(targetStatus)) {
+      throw new BadRequestException(
+        `Invalid transition: "${risk.status}" → "${targetStatus}"`,
+      );
+    }
+
+    risk.status = targetStatus;
+    return this.riskRepository.save(risk);
+  }
+
+  /**
+   * Delete a risk by ID.
+   */
+  async remove(id: string): Promise<void> {
+    const risk = await this.findOne(id);
+    await this.riskRepository.remove(risk);
+  }
+}
