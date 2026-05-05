@@ -57,24 +57,23 @@
   align-items: center;
   gap: var(--space-3);
   padding: 8px 12px;
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-medium);
+  font-size: 0.875rem;
   color: var(--text-muted);
   border-radius: 8px;
-  transition: all var(--transition-fast);
+  transition: all 0.15s ease;
   text-decoration: none;
 }
 
 .navItem:hover {
-  background-color: var(--border);
+  background: #F1F5F9;
   color: var(--text-primary);
 }
 
 .navItemActive {
-  background: #F1F5F9;
+  background: #EEF2FF;
   border-left: 3px solid var(--accent);
-  font-weight: 500;
   color: var(--accent);
+  font-weight: 500;
 }
 
 /* ── Footer ─────────────────────────────────────────── */
