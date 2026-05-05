@@ -13,7 +13,7 @@
 
 **A production-grade, full-stack platform for managing safety audits, risk registers, compliance workflows, and regulatory reporting across multi-site industrial operations.**
 
-[🌐 Live Demo (Frontend)](#) · [🔗 Live API (Backend)](#) · [📖 API Docs](#api-endpoints)
+[🌐 Live Demo (Frontend)](https://safeguard-compliance-os.vercel.app/) · [🔗 Live API (Backend)](https://safeguard-compliance-os.onrender.com/api/v1) · [📖 API Docs](#api-endpoints)
 
 </div>
 
