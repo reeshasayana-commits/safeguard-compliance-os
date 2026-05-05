@@ -23,17 +23,20 @@
   letter-spacing: var(--letter-spacing-wide);
   padding: var(--space-3) var(--space-4);
   background-color: var(--color-surface-subtle);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--border);
+  border-right: none;
+  border-left: none;
   white-space: nowrap;
   user-select: none;
 }
 
 .tr {
   transition: background-color var(--transition-fast);
+  height: 52px;
 }
 
 .tr:hover {
-  background-color: var(--color-surface-sidebar);
+  background: #F9FAFB;
 }
 
 .tr.clickable {
@@ -42,9 +45,11 @@
 
 .td {
   font-size: var(--font-size-body-sm);
-  color: var(--color-text-primary);
+  color: var(--text-primary);
   padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--border);
+  border-right: none;
+  border-left: none;
   vertical-align: middle;
 }
 

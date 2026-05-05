@@ -105,6 +105,15 @@
   --sidebar-width:     260px;
   --topbar-height:     64px;
   --content-max-width: 1400px;
+
+  /* ── Elite SaaS UI Variables ─────────────────────────────────────────── */
+  --bg-page: #FAFAFA;
+  --bg-sidebar: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --accent: #4F46E5;
+  --border: #E5E7EB;
+  --text-primary: #0F172A;
+  --text-muted: #6B7280;
 }
 
 /* ===========================================================================
@@ -127,12 +136,12 @@ html {
 }
 
 body {
-  font-family: var(--font-family);
+  font-family: Inter, system-ui, sans-serif;
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-normal);
-  color: var(--color-text-primary);
-  background-color: var(--color-surface);
+  color: var(--text-primary);
+  background-color: var(--bg-page);
 }
 
 a {
