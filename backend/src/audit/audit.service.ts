@@ -60,7 +60,7 @@ export class AuditService {
 
     // Automatically set completedDate if status moves to COMPLETED
     if (updateAuditDto.status === AuditStatus.COMPLETED && !audit.completedDate) {
-      audit.completedDate = new Date().toISOString();
+      audit.completedDate = new Date();
     }
 
     return this.auditRepo.save(audit);
