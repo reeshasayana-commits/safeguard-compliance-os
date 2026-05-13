@@ -1,49 +1,50 @@
-import { type ButtonHTMLAttributes, type ReactNode } from 'react';
+import type { ReactNode, ButtonHTMLAttributes } from 'react';
+import { motion } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
 import styles from './PrimaryButton.module.css';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface PrimaryButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  children: ReactNode;
   variant?: ButtonVariant;
   size?: ButtonSize;
-  fullWidth?: boolean;
-  loading?: boolean;
   icon?: ReactNode;
+  loading?: boolean;
 }
 
 export function PrimaryButton({
   children,
   variant = 'primary',
   size = 'md',
-  fullWidth = false,
-  loading = false,
   icon,
+  loading,
   className = '',
-  disabled,
   ...rest
 }: PrimaryButtonProps) {
-  const classNames = [
-    styles.btn,
-    styles[variant],
-    styles[size],
-    fullWidth ? styles.fullWidth : '',
-    loading ? styles.loading : '',
-    className,
-  ]
-    .filter(Boolean)
-    .join(' ');
+  // Omit motion-conflicting props from HTML button attributes
+  const { 
+    onDrag, onDragStart, onDragEnd, onAnimationStart, 
+    style, ...props 
+  } = rest as any;
 
   return (
-    <button
-      className={classNames}
-      disabled={disabled || loading}
-      {...rest}
+    <motion.button
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
+      className={`${styles.button} ${styles[variant]} ${styles[size]} ${className}`}
+      disabled={loading || props.disabled}
+      style={style}
+      {...props}
     >
-      {loading && <span className={styles.spinner} aria-hidden="true" />}
-      {icon && !loading && <span className={styles.icon}>{icon}</span>}
-      <span>{children}</span>
-    </button>
+      {loading ? (
+        <Loader2 className={styles.spinner} size={size === 'sm' ? 14 : 18} />
+      ) : (
+        <>
+          {icon && <span className={styles.icon}>{icon}</span>}
+          {children}
+        </>
+      )}
+    </motion.button>
   );
 }

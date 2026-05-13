@@ -80,6 +80,61 @@ export class RiskService {
   }
 
   /**
+   * Update a risk's details.
+   */
+  async update(id: string, dto: any): Promise<Risk> {
+    const risk = await this.findOne(id);
+    
+    // Handle date conversion if present
+    if (dto.dueDate) {
+      dto.dueDate = new Date(dto.dueDate);
+    }
+
+    // Merge updates
+    Object.assign(risk, dto);
+    
+    return this.riskRepository.save(risk);
+  }
+
+  /**
+   * Calculate dashboard statistics.
+   */
+  async getStats(): Promise<any> {
+    const totalRisks = await this.riskRepository.count();
+    
+    // Count by status
+    const statusCounts = await this.riskRepository
+      .createQueryBuilder('risk')
+      .select('risk.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('risk.status')
+      .getRawMany();
+
+    const stats = {
+      totalRisks,
+      openRisks: 0,
+      inReview: 0,
+      mitigated: 0,
+      closed: 0,
+      complianceScore: 100, // Default
+    };
+
+    statusCounts.forEach(c => {
+      if (c.status === RiskStatus.OPEN) stats.openRisks = parseInt(c.count);
+      if (c.status === RiskStatus.IN_REVIEW) stats.inReview = parseInt(c.count);
+      if (c.status === RiskStatus.MITIGATED) stats.mitigated = parseInt(c.count);
+      if (c.status === RiskStatus.CLOSED) stats.closed = parseInt(c.count);
+    });
+
+    // Simple compliance score: (Non-Open Risks / Total Risks) * 100
+    if (totalRisks > 0) {
+      stats.complianceScore = Math.round(((totalRisks - stats.openRisks) / totalRisks) * 100);
+    }
+
+    return stats;
+  }
+
+  /**
    * Delete a risk by ID.
    */
   async remove(id: string): Promise<void> {

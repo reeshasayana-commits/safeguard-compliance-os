@@ -1,14 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   X, AlertTriangle, MapPin, User, Calendar, Clock,
-  FileText, ChevronRight, Loader2, Shield,
+  FileText, ChevronRight, Loader2, Shield, Pencil, Save, RotateCcw, Check
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { StatusBadge, resolveVariant } from '../ui/StatusBadge';
 import { PrimaryButton } from '../ui/PrimaryButton';
 import { useRiskStore, WORKFLOW_TRANSITIONS } from '../../store/useRiskStore';
-import { RiskSeverity, RiskStatus } from '../../types';
+import { RiskSeverity, RiskStatus } from '../../types/index';
 import styles from './RiskDetailModal.module.css';
+
+const StatusCheckIcon = () => <Check size={14} strokeWidth={3} />;
 
 const SEVERITY_VARIANT: Record<string, 'danger' | 'warning' | 'info' | 'neutral'> = {
   CRITICAL: 'danger',
@@ -37,9 +39,23 @@ function getStageIndex(status: RiskStatus): number {
 }
 
 export function RiskDetailModal() {
-  const { selectedRisk, selectRisk, advanceWorkflow, isMutating } = useRiskStore();
+  const { selectedRisk, selectRisk, advanceWorkflow, updateRisk, isMutating } = useRiskStore();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedRisk, setEditedRisk] = useState<any>(null);
 
   const isOpen = !!selectedRisk;
+
+  // Sync editedRisk when selectedRisk changes
+  useEffect(() => {
+    if (selectedRisk) {
+      setEditedRisk({
+        title: selectedRisk.title,
+        description: selectedRisk.description,
+        mitigationPlan: selectedRisk.mitigationPlan,
+      });
+      setIsEditing(false);
+    }
+  }, [selectedRisk]);
 
   // Lock body scroll
   useEffect(() => {
@@ -65,6 +81,12 @@ export function RiskDetailModal() {
   const risk = selectedRisk;
   const transition = WORKFLOW_TRANSITIONS[risk.status];
   const currentStageIdx = getStageIndex(risk.status);
+
+  const handleSave = async () => {
+    if (!editedRisk) return;
+    await updateRisk(risk.id, editedRisk);
+    setIsEditing(false);
+  };
 
   return (
     <>
@@ -95,14 +117,34 @@ export function RiskDetailModal() {
               </StatusBadge>
             </div>
           </div>
-          <button className={styles.closeBtn} onClick={() => selectRisk(null)} aria-label="Close">
-            <X size={20} />
-          </button>
+          <div className={styles.headerActions}>
+            {!isEditing && (
+              <button
+                className={styles.editBtn}
+                onClick={() => setIsEditing(true)}
+                aria-label="Edit risk"
+              >
+                <Pencil size={18} />
+              </button>
+            )}
+            <button className={styles.closeBtn} onClick={() => selectRisk(null)} aria-label="Close">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* ── Body ────────────────────────────────── */}
         <div className={styles.body}>
-          <h2 className={styles.title}>{risk.title}</h2>
+          {isEditing ? (
+            <input
+              className={styles.titleInput}
+              value={editedRisk.title}
+              onChange={(e) => setEditedRisk({ ...editedRisk, title: e.target.value })}
+              autoFocus
+            />
+          ) : (
+            <h2 className={styles.title}>{risk.title}</h2>
+          )}
 
           {/* Workflow Pipeline */}
           <div className={styles.pipeline}>
@@ -119,14 +161,14 @@ export function RiskDetailModal() {
                     <div
                       className={`${styles.stageDot} ${
                         isPast ? styles.stageDotDone : isCurrent ? styles.stageDotCurrent : styles.stageDotPending
-                      }`}
+                       }`}
                     >
-                      {isPast ? '✓' : idx + 1}
+                      {isPast ? <StatusCheckIcon /> : idx + 1}
                     </div>
                     <span
                       className={`${styles.stageLabel} ${
                         isCurrent ? styles.stageLabelCurrent : isPast ? styles.stageLabelDone : ''
-                      }`}
+                       }`}
                     >
                       {stage.label}
                     </span>
@@ -176,7 +218,15 @@ export function RiskDetailModal() {
           {/* Description */}
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Description</h3>
-            <p className={styles.prose}>{risk.description}</p>
+            {isEditing ? (
+              <textarea
+                className={styles.textArea}
+                value={editedRisk.description}
+                onChange={(e) => setEditedRisk({ ...editedRisk, description: e.target.value })}
+              />
+            ) : (
+              <p className={styles.prose}>{risk.description}</p>
+            )}
           </div>
 
           {/* Mitigation Plan */}
@@ -185,33 +235,59 @@ export function RiskDetailModal() {
               <FileText size={14} />
               Mitigation / Action Plan
             </h3>
-            <p className={styles.prose}>{risk.mitigationPlan}</p>
+            {isEditing ? (
+              <textarea
+                className={styles.textArea}
+                value={editedRisk.mitigationPlan}
+                onChange={(e) => setEditedRisk({ ...editedRisk, mitigationPlan: e.target.value })}
+              />
+            ) : (
+              <p className={styles.prose}>{risk.mitigationPlan}</p>
+            )}
           </div>
         </div>
 
-        {/* ── Footer: Workflow Actions ────────────── */}
+        {/* ── Footer: Actions ────────────────────── */}
         <div className={styles.footer}>
-          <div className={styles.footerInfo}>
-            <span className={styles.footerHint}>
-              {transition
-                ? `Next step: ${transition.label} → ${transition.nextStatus.replace(/_/g, ' ')}`
-                : 'This risk is in a terminal state'}
-            </span>
-          </div>
-          <div className={styles.footerActions}>
-            <PrimaryButton variant="secondary" onClick={() => selectRisk(null)}>
-              Close
-            </PrimaryButton>
-            {transition && (
-              <PrimaryButton
-                onClick={() => advanceWorkflow(risk.id)}
-                loading={isMutating}
-                icon={<ChevronRight size={16} />}
-              >
-                {transition.label}
-              </PrimaryButton>
-            )}
-          </div>
+          {isEditing ? (
+            <>
+              <div className={styles.footerInfo}>
+                <span className={styles.footerHint}>Unsaved changes will be lost</span>
+              </div>
+              <div className={styles.footerActions}>
+                <PrimaryButton variant="secondary" onClick={() => setIsEditing(false)} icon={<RotateCcw size={16} />}>
+                  Cancel
+                </PrimaryButton>
+                <PrimaryButton onClick={handleSave} loading={isMutating} icon={<Save size={16} />}>
+                  Save Changes
+                </PrimaryButton>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className={styles.footerInfo}>
+                <span className={styles.footerHint}>
+                  {transition
+                    ? `Next step: ${transition.label} → ${transition.nextStatus.replace(/_/g, ' ')}`
+                    : 'This risk is in a terminal state'}
+                </span>
+              </div>
+              <div className={styles.footerActions}>
+                <PrimaryButton variant="secondary" onClick={() => selectRisk(null)}>
+                  Close
+                </PrimaryButton>
+                {transition && (
+                  <PrimaryButton
+                    onClick={() => advanceWorkflow(risk.id)}
+                    loading={isMutating}
+                    icon={<ChevronRight size={16} />}
+                  >
+                    {transition.label}
+                  </PrimaryButton>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </>

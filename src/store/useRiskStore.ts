@@ -3,7 +3,8 @@
 // ============================================================================
 
 import { create } from 'zustand';
-import { type Risk, RiskSeverity, RiskStatus, UserRole } from '../types';
+import { RiskSeverity, RiskStatus, UserRole } from '../types/index';
+import type { Risk } from '../types/index';
 import { type CreateRiskFormData } from '../schemas/risk.schema';
 import { apiClient } from '../api/client';
 import { MOCK_RISKS } from '../data/mock-data';
@@ -59,11 +60,22 @@ interface RiskStoreState {
   selectedRisk: Risk | null;
   /** Tracks whether we're using live API or mock fallback */
   isLiveApi: boolean;
+  /** Live dashboard statistics */
+  stats: {
+    totalRisks: number;
+    openRisks: number;
+    inReview: number;
+    mitigated: number;
+    closed: number;
+    complianceScore: number;
+  };
 }
 
 interface RiskStoreActions {
   fetchRisks: () => Promise<void>;
+  fetchStats: () => Promise<void>;
   createRisk: (data: CreateRiskFormData) => Promise<void>;
+  updateRisk: (id: string, data: Partial<Risk>) => Promise<void>;
   updateRiskStatus: (id: string, status: RiskStatus) => Promise<void>;
   advanceWorkflow: (id: string) => Promise<void>;
   setFilters: (partial: Partial<RiskFilters>) => void;
@@ -168,6 +180,14 @@ export const useRiskStore = create<RiskStore>((set, get) => ({
   isSlideOverOpen: false,
   selectedRisk: null,
   isLiveApi: false,
+  stats: {
+    totalRisks: 0,
+    openRisks: 0,
+    inReview: 0,
+    mitigated: 0,
+    closed: 0,
+    complianceScore: 0,
+  },
 
   fetchRisks: async () => {
     set({ isLoading: true, error: null });
@@ -176,10 +196,35 @@ export const useRiskStore = create<RiskStore>((set, get) => ({
       const response = await apiClient.get('/risks');
       const mapped = (response.data as Record<string, unknown>[]).map(mapApiRisk);
       set({ risks: mapped, isLoading: false, isLiveApi: true });
+      // Also fetch stats if API is live
+      await get().fetchStats();
     } catch {
       // Fallback to mock data if backend is not running
       console.warn('[RiskStore] API unavailable — falling back to mock data');
-      set({ risks: [...MOCK_RISKS], isLoading: false, isLiveApi: false });
+      const mockRisks = [...MOCK_RISKS];
+      
+      // Calculate stats locally from mock data
+      const stats = {
+        totalRisks: mockRisks.length,
+        openRisks: mockRisks.filter(r => r.status === RiskStatus.OPEN).length,
+        inReview: mockRisks.filter(r => r.status === RiskStatus.IN_REVIEW).length,
+        mitigated: mockRisks.filter(r => r.status === RiskStatus.MITIGATED).length,
+        closed: mockRisks.filter(r => r.status === RiskStatus.CLOSED).length,
+        complianceScore: 85, // Static mock score
+      };
+
+      set({ risks: mockRisks, stats, isLoading: false, isLiveApi: false });
+    }
+  },
+
+  fetchStats: async () => {
+    try {
+      if (get().isLiveApi) {
+        const response = await apiClient.get('/risks/stats');
+        set({ stats: response.data });
+      }
+    } catch (err) {
+      console.error('[RiskStore] Failed to fetch stats:', err);
     }
   },
 
@@ -232,6 +277,30 @@ export const useRiskStore = create<RiskStore>((set, get) => ({
       set({ isMutating: false, isSlideOverOpen: false });
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? 'Failed to create risk';
+      set({ error: Array.isArray(msg) ? msg.join(', ') : msg, isMutating: false });
+    }
+  },
+
+  updateRisk: async (id: string, data: Partial<Risk>) => {
+    set({ isMutating: true, error: null });
+    try {
+      if (get().isLiveApi) {
+        // Map frontend fields to backend DTO
+        const payload: any = { ...data };
+        if (data.locationId) payload.locationId = data.locationId;
+        
+        await apiClient.patch(`/risks/${id}`, payload);
+        await get().fetchRisks();
+      } else {
+        // Mock update
+        set((state) => ({
+          risks: state.risks.map((r) => (r.id === id ? { ...r, ...data } : r)),
+          selectedRisk: state.selectedRisk?.id === id ? { ...state.selectedRisk, ...data } : state.selectedRisk,
+        }));
+      }
+      set({ isMutating: false });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? 'Failed to update risk';
       set({ error: Array.isArray(msg) ? msg.join(', ') : msg, isMutating: false });
     }
   },

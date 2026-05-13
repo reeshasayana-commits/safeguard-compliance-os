@@ -102,13 +102,20 @@
   --transition-slow:    300ms ease;
 
   /* ── Layout ──────────────────────────────────────────────────────────── */
-  --sidebar-width:     260px;
+  --sidebar-width:     240px;
   --topbar-height:     64px;
-  --content-max-width: 1400px;
+  --content-max-width: 100%;
+
+  /* ── Glassmorphism Tokens ───────────────────────────────── */
+  --glass-bg: rgba(255, 255, 255, 0.25);
+  --glass-bg-hover: rgba(255, 255, 255, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-blur: 24px;
+  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 
   /* ── Elite SaaS UI Variables ─────────────────────────────────────────── */
   --bg-page: #FAFAFA;
-  --bg-sidebar: #F8FAFC;
+  --bg-sidebar: var(--glass-bg);
   --bg-card: #FFFFFF;
   --accent: #4F46E5;
   --border: #E5E7EB;
@@ -126,6 +133,10 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+ul, ol {
+  list-style: none;
 }
 
 html {

@@ -18,6 +18,7 @@ import {
 } from '@nestjs/common';
 import { RiskService } from './risk.service';
 import { CreateRiskDto } from './dto/create-risk.dto';
+import { UpdateRiskDto } from './dto/update-risk.dto';
 import { UpdateRiskStatusDto } from './dto/update-risk-status.dto';
 import { Risk } from './entities/risk.entity';
 
@@ -33,6 +34,15 @@ export class RiskController {
   @Get()
   async findAll(): Promise<Risk[]> {
     return this.riskService.findAll();
+  }
+
+  /**
+   * GET /risks/stats
+   * Fetch aggregate statistics for the dashboard.
+   */
+  @Get('stats')
+  async getStats(): Promise<any> {
+    return this.riskService.getStats();
   }
 
   /**
@@ -52,6 +62,18 @@ export class RiskController {
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateRiskDto): Promise<Risk> {
     return this.riskService.create(dto);
+  }
+
+  /**
+   * PATCH /risks/:id
+   * Update risk details.
+   */
+  @Patch(':id')
+  async update(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateRiskDto,
+  ): Promise<Risk> {
+    return this.riskService.update(id, dto);
   }
 
   /**

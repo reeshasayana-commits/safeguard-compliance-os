@@ -1,28 +1,63 @@
-/* StatusBadge — Scoped module styles */
-
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 10px;
-  border-radius: 99px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid transparent;
 }
 
-.badge::before {
-  content: '';
+.dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: currentColor;
-  display: inline-block;
+  flex-shrink: 0;
 }
 
-/* ── Variants ───────────────────────────────────────── */
+/* ── Variants ───────────────────────────────── */
 
-.success { background: #F0FDF4; color: #15803D; }
-.warning { background: #FFF7ED; color: #C2410C; }
-.danger { background: #FEF2F2; color: #B91C1C; }
-.info { background: #F8FAFC; color: #475569; }
-.neutral { background: #F8FAFC; color: #475569; }
+.success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+.success .dot { background: #10b981; }
+
+.warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+.warning .dot { background: #f59e0b; }
+
+.danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+.danger .dot { background: #ef4444; }
+
+.info {
+  background: rgba(59, 130, 246, 0.1);
+  color: #1d4ed8;
+  border-color: rgba(59, 130, 246, 0.2);
+}
+.info .dot { background: #3b82f6; }
+
+.primary {
+  background: rgba(99, 102, 241, 0.1);
+  color: #4f46e5;
+  border-color: rgba(99, 102, 241, 0.2);
+}
+.primary .dot { background: #6366f1; }
+
+.neutral {
+  background: rgba(148, 163, 184, 0.1);
+  color: #475569;
+  border-color: rgba(148, 163, 184, 0.2);
+}
+.neutral .dot { background: #94a3b8; }

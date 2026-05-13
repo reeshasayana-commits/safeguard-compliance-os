@@ -11,13 +11,26 @@ interface AuditStoreState {
   error: string | null;
   isSlideOverOpen: boolean;
   isLiveApi: boolean;
+  selectedAudit: Audit | null;
+  isDetailOpen: boolean;
+  stats: {
+    totalAudits: number;
+    scheduled: number;
+    inProgress: number;
+    completed: number;
+    avgScore: number;
+  };
 }
 
 interface AuditStoreActions {
   fetchAudits: () => Promise<void>;
+  fetchStats: () => Promise<void>;
   createAudit: (data: CreateAuditFormData) => Promise<void>;
+  updateAudit: (id: string, data: Partial<CreateAuditFormData>) => Promise<void>;
   openSlideOver: () => void;
   closeSlideOver: () => void;
+  selectAudit: (audit: Audit | null) => void;
+  setDetailOpen: (open: boolean) => void;
   clearError: () => void;
 }
 
@@ -72,17 +85,45 @@ export const useAuditStore = create<AuditStore>((set, get) => ({
   error: null,
   isSlideOverOpen: false,
   isLiveApi: false,
+  selectedAudit: null,
+  isDetailOpen: false,
+  stats: {
+    totalAudits: 0,
+    scheduled: 0,
+    inProgress: 0,
+    completed: 0,
+    avgScore: 0,
+  },
 
   fetchAudits: async () => {
     set({ isLoading: true, error: null });
     try {
       const response = await apiClient.get('/audits');
-      const mapped = (response.data as Record<string, unknown>[]).map(mapApiAudit);
-      set({ audits: mapped, isLoading: false, isLiveApi: true });
+      const apiData = response.data as Record<string, unknown>[];
+      const mapped = apiData.map(mapApiAudit);
+      
+      // If API returns empty, use mock data as baseline
+      const finalData = mapped.length > 0 ? mapped : [...MOCK_AUDITS];
+      
+      set({ audits: finalData, isLoading: false, isLiveApi: apiData.length > 0 });
+      await get().fetchStats();
     } catch {
       console.warn('[AuditStore] API unavailable — falling back to mock data');
       set({ audits: [...MOCK_AUDITS], isLoading: false, isLiveApi: false });
+      await get().fetchStats();
     }
+  },
+
+  fetchStats: async () => {
+    const audits = get().audits;
+    const stats = {
+      totalAudits: audits.length,
+      scheduled: audits.filter(a => a.status === AuditStatus.SCHEDULED).length,
+      inProgress: audits.filter(a => a.status === AuditStatus.IN_PROGRESS).length,
+      completed: audits.filter(a => a.status === AuditStatus.COMPLETED).length,
+      avgScore: Math.round(audits.reduce((acc, a) => acc + (a.score || 0), 0) / (audits.filter(a => a.score !== null).length || 1)),
+    };
+    set({ stats });
   },
 
   createAudit: async (data: CreateAuditFormData) => {
@@ -136,7 +177,48 @@ export const useAuditStore = create<AuditStore>((set, get) => ({
     }
   },
 
-  openSlideOver: () => set({ isSlideOverOpen: true }),
-  closeSlideOver: () => set({ isSlideOverOpen: false }),
+  updateAudit: async (id: string, data: Partial<CreateAuditFormData>) => {
+    set({ isMutating: true, error: null });
+    try {
+      if (get().isLiveApi) {
+        const payload = {
+          unitName: data.unitName,
+          auditorName: data.auditorName,
+          auditDate: data.scheduledDate,
+          locationId: data.areaId,
+          status: data.status,
+          notes: data.notes,
+        };
+        await apiClient.patch(`/audits/${id}`, payload);
+        await get().fetchAudits();
+      } else {
+        // Mock fallback
+        set((s) => ({
+          audits: s.audits.map((a) =>
+            a.id === id
+              ? {
+                  ...a,
+                  unitName: data.unitName ?? (a as any).unitName,
+                  auditor: { ...a.auditor, fullName: data.auditorName ?? a.auditor.fullName },
+                  scheduledDate: data.scheduledDate ?? a.scheduledDate,
+                  status: data.status ?? a.status,
+                  notes: data.notes ?? a.notes,
+                }
+              : a
+          ),
+        }));
+      }
+      set({ isMutating: false, isSlideOverOpen: false, selectedAudit: null, isDetailOpen: false });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? 'Failed to update audit';
+      set({ error: Array.isArray(msg) ? msg.join(', ') : msg, isMutating: false });
+      throw err;
+    }
+  },
+
+  openSlideOver: () => set({ isSlideOverOpen: true, isDetailOpen: false }),
+  closeSlideOver: () => set({ isSlideOverOpen: false, selectedAudit: null, isDetailOpen: false }),
+  selectAudit: (audit) => set({ selectedAudit: audit, isDetailOpen: !!audit }),
+  setDetailOpen: (open) => set({ isDetailOpen: open }),
   clearError: () => set({ error: null }),
 }));

@@ -39,10 +39,12 @@ async function bootstrap() {
 
   // ── Start ───────────────────────────────────────────────────────────
   const config = app.get(ConfigService);
-  const port = config.get<number>('APP_PORT', 3001);
+  // Render provides 'PORT' automatically. We check that first, then APP_PORT, then fallback to 3001.
+  const port = process.env.PORT || config.get<number>('APP_PORT', 3001);
 
   await app.listen(port);
-  console.log(`\n🛡️  SafeGuard API running at http://localhost:${port}/api/v1\n`);
+  console.log(`\n🛡️  SafeGuard API is live and listening on port ${port}`);
+  console.log(`🚀 Base Path: api/v1\n`);
 }
 
 bootstrap();

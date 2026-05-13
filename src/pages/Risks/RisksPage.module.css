@@ -1,40 +1,214 @@
-/* RisksPage — Scoped module styles */
-
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-6);
+  padding: var(--space-2);
 }
 
 .header {
   display: flex;
-  align-items: flex-start;
-  gap: var(--space-4);
+  align-items: center;
+  justify-content: space-between;
 }
 
-.header > :first-child {
-  flex: 1;
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 4px;
 }
 
-.headerAction {
-  flex-shrink: 0;
-  padding-top: var(--space-4);
+.subtitle {
+  font-size: 0.85rem;
+  color: var(--color-muted);
 }
 
-.tableWrapper {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* ── Stats Strip ────────────────────────────── */
+
+.statsStrip {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-6);
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
   box-shadow: var(--shadow-sm);
-  overflow: hidden;
 }
 
-.monospace {
-  font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: var(--font-size-body-sm);
+.miniStat {
+  display: flex;
+  flex-direction: column;
+}
+
+.miniLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.miniValue {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.miniDivider {
+  width: 1px;
+  height: 24px;
+  background: var(--glass-border);
+}
+
+/* ── Table Cells ────────────────────────────── */
+
+.riskId {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.titleCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.titleText {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.locationText {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.severityWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
   color: var(--color-text-secondary);
 }
 
-.riskTitle {
-  font-weight: var(--font-weight-medium);
+.severityBar {
+  width: 4px;
+  height: 16px;
+  border-radius: var(--radius-pill);
+}
+
+.moreBtn {
+  color: var(--color-muted);
+  transition: color var(--transition-fast);
+}
+
+.moreBtn:hover {
+  color: var(--color-text-primary);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.searchInput {
+  width: 240px;
+  height: 40px;
+  padding: 0 var(--space-4);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.searchInput:focus {
+  background: var(--glass-bg-hover);
+  border-color: var(--color-primary-light);
+  width: 280px;
+}
+
+.filterSelect {
+  height: 40px;
+  padding: 0 var(--space-4);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+  outline: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+/* ── Mobile Overrides ────────────────────────── */
+
+@media (max-width: 1200px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-4);
+  }
+
+  .actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .searchInput {
+    width: 100% !important;
+  }
+
+  .statsStrip {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-4);
+    padding: var(--space-4);
+  }
+
+  .miniDivider {
+    display: none;
+  }
+
+  .miniStat {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
 }

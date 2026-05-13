@@ -16,7 +16,7 @@ const STATUS_OPTIONS = [
 ];
 
 export function CreateAuditSlideOver() {
-  const { isSlideOverOpen, closeSlideOver, createAudit, isMutating } = useAuditStore();
+  const { isSlideOverOpen, closeSlideOver, createAudit, updateAudit, isMutating, selectedAudit } = useAuditStore();
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const methods = useForm<CreateAuditFormData>({
@@ -38,30 +38,32 @@ export function CreateAuditSlideOver() {
 
   useEffect(() => {
     if (isSlideOverOpen) {
-      reset();
-    }
-  }, [isSlideOverOpen, reset]);
-
-  useEffect(() => {
-    if (isSlideOverOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isSlideOverOpen]);
-
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isSlideOverOpen) {
-        closeSlideOver();
+      if (selectedAudit) {
+        // Map audit to form data
+        reset({
+          unitName: (selectedAudit as any).unitName || 'Safety Compliance Audit',
+          auditorName: selectedAudit.auditor.fullName,
+          scheduledDate: selectedAudit.scheduledDate.split('T')[0],
+          locationId: '', // These will be handled by the LocationTreeSelect if we had IDs
+          subLocationId: '',
+          areaId: selectedAudit.locationId,
+          status: selectedAudit.status as any,
+          notes: selectedAudit.notes || '',
+        });
+      } else {
+        reset({
+          unitName: '',
+          auditorName: '',
+          scheduledDate: '',
+          locationId: '',
+          subLocationId: '',
+          areaId: '',
+          status: AuditStatus.SCHEDULED,
+          notes: '',
+        });
       }
-    };
-    document.addEventListener('keydown', handleEsc);
-    return () => document.removeEventListener('keydown', handleEsc);
-  }, [isSlideOverOpen, closeSlideOver]);
+    }
+  }, [isSlideOverOpen, reset, selectedAudit]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === overlayRef.current) {
@@ -71,12 +73,16 @@ export function CreateAuditSlideOver() {
 
   const onSubmit = async (data: CreateAuditFormData) => {
     try {
-      await createAudit(data);
-      toast.success('Audit scheduled successfully');
+      if (selectedAudit) {
+        await updateAudit(selectedAudit.id, data);
+        toast.success('Audit updated successfully');
+      } else {
+        await createAudit(data);
+        toast.success('Audit scheduled successfully');
+      }
       closeSlideOver();
     } catch (error) {
-      // Error is handled by the store
-      toast.error('Failed to schedule audit');
+      toast.error(selectedAudit ? 'Failed to update audit' : 'Failed to schedule audit');
     }
   };
 
@@ -93,15 +99,15 @@ export function CreateAuditSlideOver() {
         className={`${styles.panel} ${isSlideOverOpen ? styles.panelOpen : ''}`}
         role="dialog"
         aria-modal="true"
-        aria-label="Schedule a new audit"
+        aria-label={selectedAudit ? 'Edit audit' : 'Schedule a new audit'}
         aria-hidden={!isSlideOverOpen}
       >
         <div className={styles.header}>
           <div className={styles.headerTitle}>
             <ClipboardCheck size={20} className={styles.headerIcon} />
             <div>
-              <h2 className={styles.title}>Schedule New Audit</h2>
-              <p className={styles.subtitle}>Fill all required fields to schedule</p>
+              <h2 className={styles.title}>{selectedAudit ? 'Edit Audit Details' : 'Schedule New Audit'}</h2>
+              <p className={styles.subtitle}>{selectedAudit ? 'Modify the audit parameters' : 'Fill all required fields to schedule'}</p>
             </div>
           </div>
           <button
@@ -181,7 +187,7 @@ export function CreateAuditSlideOver() {
                 type="submit"
                 loading={isMutating}
               >
-                {isMutating ? 'Scheduling...' : 'Schedule Audit'}
+                {selectedAudit ? (isMutating ? 'Updating...' : 'Update Audit') : (isMutating ? 'Scheduling...' : 'Schedule Audit')}
               </PrimaryButton>
             </div>
           </form>

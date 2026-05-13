@@ -1,2 +1,2 @@
 export { StatusBadge, resolveVariant } from './StatusBadge';
-export type { BadgeVariant } from './StatusBadge';
+export type { StatusVariant } from './StatusBadge';

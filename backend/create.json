@@ -1,0 +1,8 @@
+{
+  "title": "QA Verification Test Risk",
+  "description": "Testing if stats update correctly after risk creation.",
+  "severity": "MEDIUM",
+  "locationId": "f712dd57-3c8a-4804-af0d-2ec738e52275",
+  "assignedUserId": "usr-raj-patel",
+  "actionPlan": "Verify that the totalRisks count in the dashboard increases by 1."
+}

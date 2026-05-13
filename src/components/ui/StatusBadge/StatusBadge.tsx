@@ -1,48 +1,29 @@
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import styles from './StatusBadge.module.css';
 
-export type BadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+export type StatusVariant = 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'neutral';
 
 interface StatusBadgeProps {
   children: ReactNode;
-  variant?: BadgeVariant;
+  variant?: StatusVariant;
   dot?: boolean;
   className?: string;
 }
 
-const variantMap: Record<string, BadgeVariant> = {
-  completed: 'success',
-  mitigated: 'success',
-  approved: 'success',
-  resolved: 'success',
-  closed: 'success',
-  in_progress: 'warning',
-  in_review: 'warning',
-  assigned: 'info',
-  scheduled: 'info',
-  open: 'danger',
-  failed: 'danger',
-  critical: 'danger',
-  high: 'warning',
-  medium: 'info',
-  low: 'neutral',
-};
-
-/** Resolve a status string to a badge variant automatically */
-export function resolveVariant(status: string): BadgeVariant {
-  return variantMap[status.toLowerCase().replace(/\s+/g, '_')] ?? 'neutral';
-}
-
-export function StatusBadge({
-  children,
-  variant = 'neutral',
-  dot = false,
-  className = '',
-}: StatusBadgeProps) {
+export function StatusBadge({ children, variant = 'neutral', dot, className = '' }: StatusBadgeProps) {
   return (
     <span className={`${styles.badge} ${styles[variant]} ${className}`}>
       {dot && <span className={styles.dot} />}
       {children}
     </span>
   );
+}
+
+export function resolveVariant(status: string): StatusVariant {
+  const s = status.toUpperCase();
+  if (s === 'OPEN' || s === 'ASSIGNED') return 'danger';
+  if (s === 'IN_PROGRESS' || s === 'IN_REVIEW') return 'warning';
+  if (s === 'RESOLVED' || s === 'MITIGATED') return 'info';
+  if (s === 'APPROVED' || s === 'CLOSED') return 'success';
+  return 'neutral';
 }

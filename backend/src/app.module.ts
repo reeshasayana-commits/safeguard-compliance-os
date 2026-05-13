@@ -25,6 +25,7 @@ import { AppController } from './app.controller';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+      ignoreEnvFile: process.env.NODE_ENV === 'production',
     }),
 
     // ── TypeORM ─────────────────────────────────────────────────────────
