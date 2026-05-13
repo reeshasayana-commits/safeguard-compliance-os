@@ -32,6 +32,8 @@ interface AuditStoreActions {
   selectAudit: (audit: Audit | null) => void;
   setDetailOpen: (open: boolean) => void;
   clearError: () => void;
+  /** Internal: Recalculate stats from current audits array (used in mock mode) */
+  _recalculateMockStats: () => void;
 }
 
 type AuditStore = AuditStoreState & AuditStoreActions;

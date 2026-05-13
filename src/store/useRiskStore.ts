@@ -83,6 +83,8 @@ interface RiskStoreActions {
   openSlideOver: () => void;
   closeSlideOver: () => void;
   selectRisk: (risk: Risk | null) => void;
+  /** Internal: Recalculate stats from current risks array (used in mock mode) */
+  _recalculateMockStats: () => void;
   clearError: () => void;
 }
 
