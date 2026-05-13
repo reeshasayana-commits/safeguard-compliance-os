@@ -196,24 +196,20 @@ export const useRiskStore = create<RiskStore>((set, get) => ({
       const response = await apiClient.get('/risks');
       const mapped = (response.data as Record<string, unknown>[]).map(mapApiRisk);
       set({ risks: mapped, isLoading: false, isLiveApi: true });
-      // Also fetch stats if API is live
-      await get().fetchStats();
-    } catch {
-      // Fallback to mock data if backend is not running
-      console.warn('[RiskStore] API unavailable — falling back to mock data');
-      const mockRisks = [...MOCK_RISKS];
       
-      // Calculate stats locally from mock data
-      const stats = {
-        totalRisks: mockRisks.length,
-        openRisks: mockRisks.filter(r => r.status === RiskStatus.OPEN).length,
-        inReview: mockRisks.filter(r => r.status === RiskStatus.IN_REVIEW).length,
-        mitigated: mockRisks.filter(r => r.status === RiskStatus.MITIGATED).length,
-        closed: mockRisks.filter(r => r.status === RiskStatus.CLOSED).length,
-        complianceScore: 85, // Static mock score
-      };
-
-      set({ risks: mockRisks, stats, isLoading: false, isLiveApi: false });
+      // Immediately refresh stats from the server
+      await get().fetchStats();
+    } catch (err) {
+      // Fallback to mock data if backend is not running
+      console.warn('[RiskStore] API unavailable or failed — falling back to mock data', err);
+      const mockRisks = [...get().risks.length > 0 ? get().risks : MOCK_RISKS];
+      
+      set({ 
+        risks: mockRisks, 
+        isLoading: false, 
+        isLiveApi: false 
+      });
+      get()._recalculateMockStats();
     }
   },
 
@@ -222,17 +218,36 @@ export const useRiskStore = create<RiskStore>((set, get) => ({
       if (get().isLiveApi) {
         const response = await apiClient.get('/risks/stats');
         set({ stats: response.data });
+        console.log('[RiskStore] Live stats updated:', response.data);
+      } else {
+        get()._recalculateMockStats();
       }
     } catch (err) {
       console.error('[RiskStore] Failed to fetch stats:', err);
     }
   },
 
+  _recalculateMockStats: () => {
+    const { risks } = get();
+    const stats = {
+      totalRisks: risks.length,
+      openRisks: risks.filter(r => r.status === RiskStatus.OPEN || r.status === RiskStatus.ASSIGNED).length,
+      inReview: risks.filter(r => r.status === RiskStatus.IN_REVIEW).length,
+      mitigated: risks.filter(r => r.status === RiskStatus.MITIGATED || r.status === RiskStatus.APPROVED).length,
+      closed: risks.filter(r => r.status === RiskStatus.CLOSED).length,
+      complianceScore: risks.length > 0 
+        ? Math.round(((risks.length - risks.filter(r => r.status === RiskStatus.OPEN).length) / risks.length) * 100)
+        : 100,
+    };
+    set({ stats });
+  },
+
   createRisk: async (data: CreateRiskFormData) => {
     set({ isMutating: true, error: null });
+    console.log('[RiskStore] Creating risk with payload:', data);
+    
     try {
       if (get().isLiveApi) {
-        // Live API: POST to backend
         const payload = {
           title: data.title,
           description: data.description,
@@ -242,9 +257,12 @@ export const useRiskStore = create<RiskStore>((set, get) => ({
           actionPlan: data.actionPlan,
           dueDate: data.dueDate || undefined,
         };
-        await apiClient.post('/risks', payload);
-        // Refetch to get server-generated fields (id, riskId, timestamps)
+        const response = await apiClient.post('/risks', payload);
+        console.log('[RiskStore] Risk created successfully:', response.data);
+        
+        // Refetch everything to ensure synchronization
         await get().fetchRisks();
+        await get().fetchStats();
       } else {
         // Mock fallback
         const newRisk: Risk = {
@@ -254,7 +272,7 @@ export const useRiskStore = create<RiskStore>((set, get) => ({
           description: data.description,
           locationId: data.areaId,
           location: {
-            id: data.areaId, name: data.areaId, type: 'ZONE', parentId: data.subLocationId,
+            id: data.areaId, name: 'New Location', type: 'AREA' as any, parentId: data.subLocationId,
             children: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
           },
           severity: data.severity,

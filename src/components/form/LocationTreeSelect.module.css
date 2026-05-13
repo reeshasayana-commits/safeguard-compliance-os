@@ -17,6 +17,13 @@
 .header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.headerTitle {
+  display: flex;
+  align-items: center;
   gap: var(--space-2);
 }
 
@@ -28,6 +35,16 @@
   font-size: var(--font-size-body-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
+}
+
+.spinner {
+  color: var(--color-primary);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* ── Breadcrumb ─────────────────────────────────────── */

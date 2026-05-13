@@ -102,19 +102,39 @@ export const useAuditStore = create<AuditStore>((set, get) => ({
       const apiData = response.data as Record<string, unknown>[];
       const mapped = apiData.map(mapApiAudit);
       
-      // If API returns empty, use mock data as baseline
-      const finalData = mapped.length > 0 ? mapped : [...MOCK_AUDITS];
-      
-      set({ audits: finalData, isLoading: false, isLiveApi: apiData.length > 0 });
+      set({ audits: mapped, isLoading: false, isLiveApi: true });
       await get().fetchStats();
-    } catch {
-      console.warn('[AuditStore] API unavailable — falling back to mock data');
-      set({ audits: [...MOCK_AUDITS], isLoading: false, isLiveApi: false });
-      await get().fetchStats();
+    } catch (err) {
+      console.warn('[AuditStore] API unavailable — falling back to mock data', err);
+      const mockAudits = get().audits.length > 0 ? get().audits : [...MOCK_AUDITS];
+      set({ audits: mockAudits, isLoading: false, isLiveApi: false });
+      get()._recalculateMockStats();
     }
   },
 
   fetchStats: async () => {
+    try {
+      if (get().isLiveApi) {
+        // Backend doesn't have a dedicated /audits/stats yet, so we calculate locally from the synced audits array
+        // OR we can assume the backend might add it later. For now, let's calculate locally for consistency.
+        const audits = get().audits;
+        const stats = {
+          totalAudits: audits.length,
+          scheduled: audits.filter(a => a.status === AuditStatus.SCHEDULED).length,
+          inProgress: audits.filter(a => a.status === AuditStatus.IN_PROGRESS).length,
+          completed: audits.filter(a => a.status === AuditStatus.COMPLETED).length,
+          avgScore: Math.round(audits.reduce((acc, a) => acc + (a.score || 0), 0) / (audits.filter(a => a.score !== null).length || 1)),
+        };
+        set({ stats });
+      } else {
+        get()._recalculateMockStats();
+      }
+    } catch (err) {
+      console.error('[AuditStore] Failed to fetch stats:', err);
+    }
+  },
+
+  _recalculateMockStats: () => {
     const audits = get().audits;
     const stats = {
       totalAudits: audits.length,
@@ -128,6 +148,7 @@ export const useAuditStore = create<AuditStore>((set, get) => ({
 
   createAudit: async (data: CreateAuditFormData) => {
     set({ isMutating: true, error: null });
+    console.log('[AuditStore] Creating audit:', data);
     try {
       if (get().isLiveApi) {
         const payload = {
@@ -140,6 +161,7 @@ export const useAuditStore = create<AuditStore>((set, get) => ({
         };
         await apiClient.post('/audits', payload);
         await get().fetchAudits();
+        await get().fetchStats();
       } else {
         // Mock fallback
         const newAudit: Audit = {
@@ -147,7 +169,7 @@ export const useAuditStore = create<AuditStore>((set, get) => ({
           auditId: `AUD-2025-${String(get().audits.length + 43).padStart(4, '0')}`,
           locationId: data.areaId,
           location: {
-            id: data.areaId, name: data.areaId, type: 'ZONE', parentId: data.subLocationId || null,
+            id: data.areaId, name: 'New Location', type: 'AREA' as any, parentId: data.subLocationId || null,
             children: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
           },
           auditorId: `usr-mock`,
@@ -168,6 +190,7 @@ export const useAuditStore = create<AuditStore>((set, get) => ({
           ...(data.unitName && { unitName: data.unitName } as any),
         };
         set((s) => ({ audits: [newAudit, ...s.audits] }));
+        get()._recalculateMockStats();
       }
       set({ isMutating: false, isSlideOverOpen: false });
     } catch (err: any) {

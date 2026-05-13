@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useFormContext, type FieldValues } from 'react-hook-form';
-import { MapPin, ChevronRight } from 'lucide-react';
-import { LOCATION_TREE, type LocationNode } from '../../data/location-tree';
+import { MapPin, ChevronRight, Loader2 } from 'lucide-react';
+import { useLocationStore } from '../../store/useLocationStore';
 import styles from './LocationTreeSelect.module.css';
 
 /**
@@ -27,6 +27,8 @@ export function LocationTreeSelect({
   subLocationField,
   areaField,
 }: LocationTreeSelectProps) {
+  const { tree, fetchTree, isLoading } = useLocationStore();
+  
   const {
     register,
     watch,
@@ -34,18 +36,22 @@ export function LocationTreeSelect({
     formState: { errors },
   } = useFormContext<FieldValues>();
 
+  useEffect(() => {
+    fetchTree();
+  }, [fetchTree]);
+
   const selectedLocationId = watch(locationField) as string;
   const selectedSubLocationId = watch(subLocationField) as string;
 
   // Derived data for cascaded selects
-  const selectedLocation: LocationNode | undefined = useMemo(
-    () => LOCATION_TREE.find((loc) => loc.id === selectedLocationId),
-    [selectedLocationId]
+  const selectedLocation = useMemo(
+    () => tree.find((loc) => loc.id === selectedLocationId),
+    [tree, selectedLocationId]
   );
 
   const subLocations = selectedLocation?.children ?? [];
 
-  const selectedSubLocation: LocationNode | undefined = useMemo(
+  const selectedSubLocation = useMemo(
     () => subLocations.find((sub) => sub.id === selectedSubLocationId),
     [subLocations, selectedSubLocationId]
   );
@@ -75,8 +81,11 @@ export function LocationTreeSelect({
   return (
     <div className={styles.wrapper}>
       <div className={styles.header}>
-        <MapPin size={16} className={styles.headerIcon} />
-        <span className={styles.headerLabel}>Location Hierarchy</span>
+        <div className={styles.headerTitle}>
+          <MapPin size={16} className={styles.headerIcon} />
+          <span className={styles.headerLabel}>Location Hierarchy</span>
+        </div>
+        {isLoading && <Loader2 size={14} className={styles.spinner} />}
       </div>
 
       {/* Cascade breadcrumb indicator */}
@@ -105,9 +114,10 @@ export function LocationTreeSelect({
             className={`${styles.select} ${locationError ? styles.selectError : ''}`}
             {...register(locationField)}
             onChange={handleLocationChange}
+            disabled={isLoading}
           >
-            <option value="">Select location...</option>
-            {LOCATION_TREE.map((loc) => (
+            <option value="">{isLoading ? 'Loading...' : 'Select location...'}</option>
+            {tree.map((loc) => (
               <option key={loc.id} value={loc.id}>
                 {loc.name}
               </option>
@@ -128,14 +138,14 @@ export function LocationTreeSelect({
           <select
             id={subLocationField}
             className={`${styles.select} ${subLocationError ? styles.selectError : ''} ${
-              !selectedLocationId ? styles.selectDisabled : ''
+              !selectedLocationId || isLoading ? styles.selectDisabled : ''
             }`}
-            disabled={!selectedLocationId}
+            disabled={!selectedLocationId || isLoading}
             {...register(subLocationField)}
             onChange={handleSubLocationChange}
           >
             <option value="">
-              {selectedLocationId ? 'Select sub-location...' : 'Select a location first'}
+              {!selectedLocationId ? 'Select a location first' : 'Select sub-location...'}
             </option>
             {subLocations.map((sub) => (
               <option key={sub.id} value={sub.id}>
@@ -158,14 +168,14 @@ export function LocationTreeSelect({
           <select
             id={areaField}
             className={`${styles.select} ${areaError ? styles.selectError : ''} ${
-              !selectedSubLocationId ? styles.selectDisabled : ''
+              !selectedSubLocationId || isLoading ? styles.selectDisabled : ''
             }`}
-            disabled={!selectedSubLocationId}
+            disabled={!selectedSubLocationId || isLoading}
             {...register(areaField)}
             onChange={handleAreaChange}
           >
             <option value="">
-              {selectedSubLocationId ? 'Select area or floor...' : 'Select a sub-location first'}
+              {!selectedSubLocationId ? 'Select a sub-location first' : 'Select area or floor...'}
             </option>
             {areas.map((area) => (
               <option key={area.id} value={area.id}>
