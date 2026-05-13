@@ -47,4 +47,22 @@ export class AuditService {
 
     return audit;
   }
+
+  async update(id: string, updateAuditDto: Partial<CreateAuditDto>): Promise<Audit> {
+    const audit = await this.auditRepo.preload({
+      id,
+      ...updateAuditDto,
+    });
+
+    if (!audit) {
+      throw new NotFoundException(`Audit with ID ${id} not found`);
+    }
+
+    // Automatically set completedDate if status moves to COMPLETED
+    if (updateAuditDto.status === AuditStatus.COMPLETED && !audit.completedDate) {
+      audit.completedDate = new Date().toISOString();
+    }
+
+    return this.auditRepo.save(audit);
+  }
 }

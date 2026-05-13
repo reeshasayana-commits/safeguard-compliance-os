@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Param, HttpCode, HttpStatus } from '@nestj
 import { AuditService } from './audit.service';
 import { CreateAuditDto } from './dto/create-audit.dto';
 
-@Controller('api/v1/audits')
+@Controller('audits')
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
@@ -20,5 +20,10 @@ export class AuditController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.auditService.findOne(id);
+  }
+
+  @Patch(':id')
+  async update(@Param('id') id: string, @Body() updateAuditDto: Partial<CreateAuditDto>) {
+    return this.auditService.update(id, updateAuditDto);
   }
 }

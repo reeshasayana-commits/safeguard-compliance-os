@@ -13,6 +13,7 @@ import styles from './CreateAuditSlideOver.module.css';
 const STATUS_OPTIONS = [
   { value: AuditStatus.SCHEDULED, label: 'Scheduled' },
   { value: AuditStatus.IN_PROGRESS, label: 'In Progress' },
+  { value: AuditStatus.COMPLETED, label: 'Completed' },
 ];
 
 export function CreateAuditSlideOver() {
