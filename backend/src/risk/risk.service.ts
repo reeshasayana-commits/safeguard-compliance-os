@@ -120,10 +120,21 @@ export class RiskService {
     };
 
     statusCounts.forEach(c => {
-      if (c.status === RiskStatus.OPEN) stats.openRisks = parseInt(c.count);
-      if (c.status === RiskStatus.IN_REVIEW) stats.inReview = parseInt(c.count);
-      if (c.status === RiskStatus.MITIGATED) stats.mitigated = parseInt(c.count);
-      if (c.status === RiskStatus.CLOSED) stats.closed = parseInt(c.count);
+      const statusStr = c.status as string;
+      const count = parseInt(c.count);
+      
+      if (['OPEN', 'ASSIGNED', 'IN_PROGRESS'].includes(statusStr)) {
+        stats.openRisks += count;
+      }
+      if (statusStr === 'RESOLVED') {
+        stats.inReview += count;
+      }
+      if (statusStr === 'APPROVED') {
+        stats.mitigated += count;
+      }
+      if (statusStr === 'CLOSED') {
+        stats.closed += count;
+      }
     });
 
     // Simple compliance score: (Non-Open Risks / Total Risks) * 100

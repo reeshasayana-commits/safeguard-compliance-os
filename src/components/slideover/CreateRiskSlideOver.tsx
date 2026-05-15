@@ -55,7 +55,7 @@ export function CreateRiskSlideOver({ isOpen, onClose }: CreateRiskSlideOverProp
   const { handleSubmit, reset, setValue } = methods;
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
       reset();
       setImagePreview(null);
     }

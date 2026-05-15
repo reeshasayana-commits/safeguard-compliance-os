@@ -240,9 +240,9 @@ export const useRiskStore = create<RiskStore>((set, get) => ({
   _recalculateMockStats: () => {
     const { risks } = get();
     const totalRisks = risks.length;
-    const openRisks = risks.filter(r => r.status === RiskStatus.OPEN || r.status === RiskStatus.ASSIGNED).length;
-    const inReview = risks.filter(r => r.status === RiskStatus.IN_REVIEW).length;
-    const mitigated = risks.filter(r => r.status === RiskStatus.MITIGATED || r.status === RiskStatus.APPROVED).length;
+    const openRisks = risks.filter(r => [RiskStatus.OPEN, RiskStatus.ASSIGNED, RiskStatus.IN_PROGRESS].includes(r.status)).length;
+    const inReview = risks.filter(r => r.status === RiskStatus.RESOLVED).length;
+    const mitigated = risks.filter(r => r.status === RiskStatus.APPROVED).length;
     const closed = risks.filter((r) => r.status === RiskStatus.CLOSED).length;
     const complianceScore = totalRisks > 0 ? Math.round(((totalRisks - openRisks) / totalRisks) * 100) : 100;
 
