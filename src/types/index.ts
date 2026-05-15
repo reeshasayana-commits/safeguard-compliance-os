@@ -129,8 +129,14 @@ export interface Risk {
   status: RiskStatus;
   ownerId: string;
   owner: User;
+  assignedUserId?: string;
   mitigationPlan: string;
   dueDate: string | null;
+  evidenceUrl?: string;
+  referenceStandard?: string;
+  actionTaken?: string;
+  closureEvidenceUrl?: string;
+  activityLogs?: string[];
   lastUpdated: string;
   createdAt: string;
   updatedAt: string;

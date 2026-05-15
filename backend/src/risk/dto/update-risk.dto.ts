@@ -7,7 +7,7 @@ import {
   MinLength,
   MaxLength,
 } from 'class-validator';
-import { RiskSeverity } from '../../common/enums';
+import { RiskSeverity, RiskStatus } from '../../common/enums';
 import { IsFutureDate } from '../validators/is-future-date.validator';
 
 export class UpdateRiskDto {
@@ -48,6 +48,26 @@ export class UpdateRiskDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(1024)
   evidenceUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  referenceStandard?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  actionTaken?: string;
+
+  @IsOptional()
+  @IsString()
+  closureEvidenceUrl?: string;
+
+  @IsOptional()
+  activityLogs?: string[];
+
+  @IsOptional()
+  @IsEnum(RiskStatus)
+  status?: RiskStatus;
 }

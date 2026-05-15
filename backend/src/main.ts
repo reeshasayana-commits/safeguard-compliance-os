@@ -5,10 +5,14 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { json } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Allow large payloads for base64 image uploads
+  app.use(json({ limit: '20mb' }));
 
   // ── Global Validation Pipe ──────────────────────────────────────────
   // Ensures ALL incoming DTOs are validated by class-validator.

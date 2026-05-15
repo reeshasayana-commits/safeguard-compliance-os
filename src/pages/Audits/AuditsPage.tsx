@@ -7,7 +7,7 @@ import { useAuditStore } from '../../store/useAuditStore';
 import { CreateAuditSlideOver } from '../../components/slideover';
 import { AuditDetailModal } from '../../components/modal';
 import type { Audit } from '../../types';
-import { exportToCSV } from '../../utils/export';
+import { exportAuditsToCSV, exportAuditsToPDF } from '../../utils/export';
 import styles from './AuditsPage.module.css';
 
 export function AuditsPage() {
@@ -101,7 +101,7 @@ export function AuditsPage() {
   }, [searchTerm, statusFilter, audits]);
 
   const handleExport = () => {
-    exportToCSV(filteredAudits, `audits-export-${new Date().toISOString().split('T')[0]}`);
+    exportAuditsToCSV(filteredAudits);
   };
 
   // ── Pagination ──────────────────────────────────────────────────────
@@ -137,7 +137,8 @@ export function AuditsPage() {
           </select>
         </div>
         <div className={styles.headerActions}>
-          <PrimaryButton variant="secondary" icon={<Download size={16} />} onClick={handleExport}>Export</PrimaryButton>
+          <PrimaryButton variant="secondary" icon={<Download size={16} />} onClick={() => exportAuditsToCSV(filteredAudits)}>CSV</PrimaryButton>
+          <PrimaryButton variant="secondary" icon={<Download size={16} />} onClick={() => exportAuditsToPDF(filteredAudits)}>PDF</PrimaryButton>
           <PrimaryButton icon={<Plus size={16} />} onClick={() => { selectAudit(null); openSlideOver(); }}>Add Audit</PrimaryButton>
         </div>
       </div>

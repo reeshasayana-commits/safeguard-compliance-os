@@ -39,10 +39,10 @@ export const WORKFLOW_TRANSITIONS: Record<RiskStatus, { nextStatus: RiskStatus; 
   [RiskStatus.OPEN]:        { nextStatus: RiskStatus.ASSIGNED,    label: 'Assign' },
   [RiskStatus.ASSIGNED]:    { nextStatus: RiskStatus.IN_PROGRESS, label: 'Start Work' },
   [RiskStatus.IN_PROGRESS]: { nextStatus: RiskStatus.RESOLVED,    label: 'Mark Resolved' },
-  [RiskStatus.IN_REVIEW]:   { nextStatus: RiskStatus.RESOLVED,    label: 'Mark Resolved' },
+  [RiskStatus.IN_REVIEW]:   { nextStatus: RiskStatus.RESOLVED,    label: 'Mark Resolved' }, // Fallback for legacy state
   [RiskStatus.RESOLVED]:    { nextStatus: RiskStatus.APPROVED,    label: 'Approve' },
-  [RiskStatus.APPROVED]:    { nextStatus: RiskStatus.CLOSED,      label: 'Close' },
-  [RiskStatus.MITIGATED]:   { nextStatus: RiskStatus.CLOSED,      label: 'Close' },
+  [RiskStatus.APPROVED]:    { nextStatus: RiskStatus.CLOSED,      label: 'Close Risk' },
+  [RiskStatus.MITIGATED]:   { nextStatus: RiskStatus.CLOSED,      label: 'Close Risk' }, // Fallback for legacy state
   [RiskStatus.CLOSED]:      null, // Terminal state
 };
 
@@ -68,6 +68,8 @@ interface RiskStoreState {
     mitigated: number;
     closed: number;
     complianceScore: number;
+    byLocation: Array<{ name: string; count: number }>;
+    byAssignee: Array<{ name: string; count: number }>;
   };
 }
 
@@ -77,7 +79,7 @@ interface RiskStoreActions {
   createRisk: (data: CreateRiskFormData) => Promise<void>;
   updateRisk: (id: string, data: Partial<Risk>) => Promise<void>;
   updateRiskStatus: (id: string, status: RiskStatus) => Promise<void>;
-  advanceWorkflow: (id: string) => Promise<void>;
+  advanceWorkflow: (id: string, extraPayload?: Partial<Risk>) => Promise<void>;
   setFilters: (partial: Partial<RiskFilters>) => void;
   resetFilters: () => void;
   openSlideOver: () => void;
@@ -163,6 +165,11 @@ function mapApiRisk(r: Record<string, unknown>): Risk {
     },
     mitigationPlan: raw.actionPlan ?? '',
     dueDate: raw.dueDate ?? null,
+    evidenceUrl: raw.evidenceUrl ?? undefined,
+    actionTaken: raw.actionTaken ?? undefined,
+    closureEvidenceUrl: raw.closureEvidenceUrl ?? undefined,
+    activityLogs: raw.activityLogs ?? undefined,
+    referenceStandard: raw.referenceStandard ?? undefined,
     lastUpdated: raw.updatedAt ?? raw.createdAt,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
@@ -188,7 +195,9 @@ export const useRiskStore = create<RiskStore>((set, get) => ({
     inReview: 0,
     mitigated: 0,
     closed: 0,
-    complianceScore: 0,
+    complianceScore: 100,
+    byLocation: [],
+    byAssignee: [],
   },
 
   fetchRisks: async () => {
@@ -220,7 +229,6 @@ export const useRiskStore = create<RiskStore>((set, get) => ({
       if (get().isLiveApi) {
         const response = await apiClient.get('/risks/stats');
         set({ stats: response.data });
-        console.log('[RiskStore] Live stats updated:', response.data);
       } else {
         get()._recalculateMockStats();
       }
@@ -231,17 +239,41 @@ export const useRiskStore = create<RiskStore>((set, get) => ({
 
   _recalculateMockStats: () => {
     const { risks } = get();
-    const stats = {
-      totalRisks: risks.length,
-      openRisks: risks.filter(r => r.status === RiskStatus.OPEN || r.status === RiskStatus.ASSIGNED).length,
-      inReview: risks.filter(r => r.status === RiskStatus.IN_REVIEW).length,
-      mitigated: risks.filter(r => r.status === RiskStatus.MITIGATED || r.status === RiskStatus.APPROVED).length,
-      closed: risks.filter(r => r.status === RiskStatus.CLOSED).length,
-      complianceScore: risks.length > 0 
-        ? Math.round(((risks.length - risks.filter(r => r.status === RiskStatus.OPEN).length) / risks.length) * 100)
-        : 100,
-    };
-    set({ stats });
+    const totalRisks = risks.length;
+    const openRisks = risks.filter(r => r.status === RiskStatus.OPEN || r.status === RiskStatus.ASSIGNED).length;
+    const inReview = risks.filter(r => r.status === RiskStatus.IN_REVIEW).length;
+    const mitigated = risks.filter(r => r.status === RiskStatus.MITIGATED || r.status === RiskStatus.APPROVED).length;
+    const closed = risks.filter((r) => r.status === RiskStatus.CLOSED).length;
+    const complianceScore = totalRisks > 0 ? Math.round(((totalRisks - openRisks) / totalRisks) * 100) : 100;
+
+    // By Location
+    const locationMap: Record<string, number> = {};
+    risks.forEach(r => {
+      const name = r.location?.name || 'Unknown';
+      locationMap[name] = (locationMap[name] || 0) + 1;
+    });
+    const byLocation = Object.entries(locationMap).map(([name, count]) => ({ name, count }));
+
+    // By Assignee
+    const assigneeMap: Record<string, number> = {};
+    risks.forEach(r => {
+      const name = r.assignedUserId || 'Unassigned';
+      assigneeMap[name] = (assigneeMap[name] || 0) + 1;
+    });
+    const byAssignee = Object.entries(assigneeMap).map(([name, count]) => ({ name, count }));
+
+    set({
+      stats: {
+        totalRisks,
+        openRisks,
+        inReview,
+        mitigated,
+        closed,
+        complianceScore,
+        byLocation,
+        byAssignee,
+      },
+    });
   },
 
   createRisk: async (data: CreateRiskFormData) => {
@@ -258,6 +290,8 @@ export const useRiskStore = create<RiskStore>((set, get) => ({
           assignedUserId: data.assignedUserId,
           actionPlan: data.actionPlan,
           dueDate: data.dueDate || undefined,
+          evidenceUrl: data.evidenceImage || undefined,
+          referenceStandard: data.referenceStandard || undefined,
         };
         const response = await apiClient.post('/risks', payload);
         console.log('[RiskStore] Risk created successfully:', response.data);
@@ -360,12 +394,17 @@ export const useRiskStore = create<RiskStore>((set, get) => ({
     }
   },
 
-  advanceWorkflow: async (id: string) => {
+  advanceWorkflow: async (id: string, extraPayload?: Partial<Risk>) => {
     const risk = get().risks.find((r) => r.id === id);
     if (!risk) return;
     const transition = WORKFLOW_TRANSITIONS[risk.status];
     if (!transition) return;
-    await get().updateRiskStatus(id, transition.nextStatus);
+    
+    // Use updateRisk to allow sending extra payload like activityLogs
+    await get().updateRisk(id, { 
+      status: transition.nextStatus,
+      ...extraPayload 
+    });
   },
 
   setFilters: (partial) => set((state) => ({ filters: { ...state.filters, ...partial } })),

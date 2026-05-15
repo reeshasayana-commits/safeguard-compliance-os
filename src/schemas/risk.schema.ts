@@ -63,6 +63,21 @@ export const createRiskSchema = z.object({
       },
       { message: 'Due date must be in the future' }
     ),
+  referenceStandard: z
+    .string()
+    .max(255, 'Reference standard must not exceed 255 characters')
+    .optional(),
+  actionTaken: z
+    .string()
+    .max(2000, 'Action taken must not exceed 2000 characters')
+    .optional(),
+  closureEvidenceUrl: z
+    .string()
+    .max(1024, 'Evidence URL must not exceed 1024 characters')
+    .optional(),
+  evidenceImage: z
+    .string()
+    .optional(),
 });
 
 export type CreateRiskFormData = z.infer<typeof createRiskSchema>;

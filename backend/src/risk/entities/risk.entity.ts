@@ -51,9 +51,25 @@ export class Risk {
   @Column({ type: 'date', nullable: true })
   dueDate: Date | null;
 
-  /** URL to uploaded evidence (image/document) */
-  @Column({ type: 'varchar', length: 1024, nullable: true })
+  /** Base64-encoded evidence image or URL */
+  @Column({ type: 'mediumtext', nullable: true })
   evidenceUrl: string | null;
+
+  /** Reference standard (e.g. ISO 45001, OSHA) */
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  referenceStandard: string | null;
+
+  /** Narrative of actions taken during resolution */
+  @Column({ type: 'varchar', length: 2000, nullable: true })
+  actionTaken: string | null;
+
+  /** URL to evidence of closure (image/document) */
+  @Column({ type: 'mediumtext', nullable: true })
+  closureEvidenceUrl: string | null;
+
+  /** JSON array of activity log strings */
+  @Column({ type: 'simple-json', nullable: true })
+  activityLogs: string[] | null;
 
   // ── Relations ────────────────────────────────────────────────────────
 

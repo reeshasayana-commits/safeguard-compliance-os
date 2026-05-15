@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Plus, Download, Filter, MoreHorizontal } from 'lucide-react';
+import { Plus, Download, Filter, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { DataTable } from '../../components/ui/DataTable';
@@ -11,7 +11,7 @@ import { RiskDetailModal } from '../../components/modal/RiskDetailModal';
 import { RiskSeverity } from '../../types/index';
 import type { Risk } from '../../types/index';
 import styles from './RisksPage.module.css';
-import { exportToCSV } from '../../utils/export';
+import { exportRisksToCSV, exportRisksToPDF } from '../../utils/export';
 
 // ── Animation Variants ──────────────────────────────────
 
@@ -70,10 +70,6 @@ export function RisksPage() {
     });
   }, [risks, searchTerm, statusFilter]);
 
-  const handleExport = () => {
-    exportToCSV(filteredRisks, `risks-export-${new Date().toISOString().split('T')[0]}`);
-  };
-
   const columns = [
     {
       key: 'riskId',
@@ -119,8 +115,8 @@ export function RisksPage() {
       width: '100px',
       align: 'right' as const,
       render: () => (
-        <button className={styles.moreBtn}>
-          <MoreHorizontal size={18} />
+        <button className={styles.moreBtn} title="View Details">
+          <Eye size={18} />
         </button>
       ),
     },
@@ -161,8 +157,11 @@ export function RisksPage() {
               <option value="CLOSED">Closed</option>
             </select>
           </div>
-          <PrimaryButton variant="secondary" icon={<Download size={18} />} onClick={handleExport}>
-            Export
+          <PrimaryButton variant="secondary" icon={<Download size={18} />} onClick={() => exportRisksToCSV(filteredRisks)}>
+            CSV
+          </PrimaryButton>
+          <PrimaryButton variant="secondary" icon={<Download size={18} />} onClick={() => exportRisksToPDF(filteredRisks)}>
+            PDF
           </PrimaryButton>
           <PrimaryButton 
             variant="primary" 

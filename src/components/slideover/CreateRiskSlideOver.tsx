@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShieldAlert, Info, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { X, ShieldAlert, Info, ImagePlus } from 'lucide-react';
+import { useDropzone } from 'react-dropzone';
 import { toast } from 'react-hot-toast';
 import { createRiskSchema, type CreateRiskFormData } from '../../schemas/risk.schema';
 import { InputField, TextAreaField, LocationTreeSelect, SelectField } from '../form';
@@ -31,6 +32,7 @@ const OWNER_OPTIONS = [
 
 export function CreateRiskSlideOver({ isOpen, onClose }: CreateRiskSlideOverProps) {
   const { createRisk, isMutating } = useRiskStore();
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const methods = useForm<CreateRiskFormData>({
     resolver: zodResolver(createRiskSchema),
@@ -44,17 +46,49 @@ export function CreateRiskSlideOver({ isOpen, onClose }: CreateRiskSlideOverProp
       assignedUserId: '',
       actionPlan: '',
       dueDate: '',
+      referenceStandard: '',
+      evidenceImage: '',
     },
     mode: 'onTouched',
   });
 
-  const { handleSubmit, reset } = methods;
+  const { handleSubmit, reset, setValue } = methods;
 
   useEffect(() => {
     if (!isOpen) {
       reset();
+      setImagePreview(null);
     }
   }, [isOpen, reset]);
+
+  // ── Image drop handler ───────────────────────────────────
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be under 5 MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setImagePreview(base64);
+      setValue('evidenceImage', base64, { shouldValidate: false });
+    };
+    reader.readAsDataURL(file);
+  }, [setValue]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp'] },
+    maxFiles: 1,
+    multiple: false,
+  });
+
+  const removeImage = () => {
+    setImagePreview(null);
+    setValue('evidenceImage', '', { shouldValidate: false });
+  };
 
   const onSubmit = async (data: CreateRiskFormData) => {
     try {
@@ -133,6 +167,12 @@ export function CreateRiskSlideOver({ isOpen, onClose }: CreateRiskSlideOverProp
                       placeholder="Describe the findings in detail..."
                       rows={3}
                     />
+
+                    <InputField<CreateRiskFormData>
+                      name="referenceStandard"
+                      label="Reference Standard (Optional)"
+                      placeholder="e.g. ISO 45001, OSHA 1910.141"
+                    />
                   </div>
 
                   <div className={styles.section}>
@@ -142,6 +182,33 @@ export function CreateRiskSlideOver({ isOpen, onClose }: CreateRiskSlideOverProp
                       subLocationField="subLocationId"
                       areaField="areaId"
                     />
+                  </div>
+
+                  {/* ── Evidence Image Upload ──────────────── */}
+                  <div className={styles.section}>
+                    <h4 className={styles.sectionTitle}>Evidence Photo</h4>
+                    {imagePreview ? (
+                      <div className={styles.previewWrapper}>
+                        <img src={imagePreview} alt="Evidence preview" className={styles.previewImage} />
+                        <button type="button" className={styles.removeBtn} onClick={removeImage} aria-label="Remove image">
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        {...getRootProps()}
+                        className={`${styles.dropzone} ${isDragActive ? styles.dropzoneActive : ''}`}
+                      >
+                        <input {...getInputProps()} />
+                        <div className={styles.dropzoneContent}>
+                          <ImagePlus size={32} />
+                          <span className={styles.dropzoneLabel}>
+                            {isDragActive ? 'Drop image here...' : 'Upload evidence photo'}
+                          </span>
+                          <span className={styles.dropzoneHint}>PNG, JPG, WEBP up to 5 MB</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className={styles.section}>
@@ -161,7 +228,7 @@ export function CreateRiskSlideOver({ isOpen, onClose }: CreateRiskSlideOverProp
 
                   <div className={styles.tipBox}>
                     <Info size={16} />
-                    <p>Ensure you specify the exact location and capture evidence photos if possible.</p>
+                    <p>Upload a clear photo of the hazard for faster resolution and audit trail.</p>
                   </div>
                 </div>
 

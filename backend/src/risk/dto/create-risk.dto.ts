@@ -93,12 +93,22 @@ export class CreateRiskDto {
   @IsUUID('4', { message: 'Audit ID must be a valid UUID' })
   auditId?: string;
 
-  /**
-   * Optional evidence URL.
-   * Not validated on the frontend — upload happens separately.
-   */
+  @IsOptional()
+  @IsString()
+  evidenceUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  referenceStandard?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  actionTaken?: string;
+
   @IsOptional()
   @IsString()
   @MaxLength(1024)
-  evidenceUrl?: string;
+  closureEvidenceUrl?: string;
 }

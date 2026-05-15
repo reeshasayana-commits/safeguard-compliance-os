@@ -131,7 +131,28 @@ export class RiskService {
       stats.complianceScore = Math.round(((totalRisks - stats.openRisks) / totalRisks) * 100);
     }
 
-    return stats;
+    // Risks by Location
+    const locationCounts = await this.riskRepository
+      .createQueryBuilder('risk')
+      .leftJoin('risk.location', 'location')
+      .select('location.name', 'name')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('location.name')
+      .getRawMany();
+
+    // Risks by Assignee
+    const assigneeCounts = await this.riskRepository
+      .createQueryBuilder('risk')
+      .select('risk.assignedUserId', 'assignee')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('risk.assignedUserId')
+      .getRawMany();
+
+    return {
+      ...stats,
+      byLocation: locationCounts.map(c => ({ name: c.name, count: parseInt(c.count) })),
+      byAssignee: assigneeCounts.map(c => ({ name: c.assignee, count: parseInt(c.count) })),
+    };
   }
 
   /**

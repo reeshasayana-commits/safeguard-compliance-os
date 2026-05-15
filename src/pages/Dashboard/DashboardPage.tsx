@@ -60,12 +60,20 @@ const ACTIVITY_DOT_COLOR: Record<string, string> = {
 };
 
 export function DashboardPage() {
-  const { stats: riskStats, fetchStats: fetchRiskStats, fetchRisks, isLoading: riskLoading } = useRiskStore();
+  const { stats: riskStats, fetchStats: fetchRiskStats, fetchRisks, isLoading: riskLoading, risks } = useRiskStore();
   const { stats: auditStats, fetchAudits, isLoading: auditLoading } = useAuditStore();
   
   const activity = MOCK_ACTIVITY;
   const riskTotal = riskStats.totalRisks;
   const isLoading = (riskLoading && riskStats.totalRisks === 0) || (auditLoading && auditStats.totalAudits === 0);
+
+  // Severity distribution for chart
+  const severityData = [
+    { label: 'Critical', count: risks.filter(r => r.severity === 'CRITICAL').length, color: '#DC2626' },
+    { label: 'High', count: risks.filter(r => r.severity === 'HIGH').length, color: '#F59E0B' },
+    { label: 'Medium', count: risks.filter(r => r.severity === 'MEDIUM').length, color: '#3B82F6' },
+    { label: 'Low', count: risks.filter(r => r.severity === 'LOW').length, color: '#10B981' },
+  ];
 
   useEffect(() => {
     fetchRiskStats();
@@ -175,6 +183,79 @@ export function DashboardPage() {
           </Card>
         </motion.div>
       </div>
+      
+      {/* ── Secondary Charts: Location + Assignee ── */}
+      <div className={styles.twoCol}>
+        <motion.div variants={item} className={styles.col}>
+          <Card title="Risks by Location" className={styles.chartCard}>
+            <div className={styles.barList}>
+              {riskStats.byLocation.map((loc) => (
+                <div key={loc.name} className={styles.barItem}>
+                  <div className={styles.barInfo}>
+                    <span className={styles.barLabel}>{loc.name}</span>
+                    <span className={styles.barValue}>{loc.count}</span>
+                  </div>
+                  <div className={styles.progressBar}>
+                    <div 
+                      className={styles.progressFill} 
+                      style={{ width: `${(loc.count / riskStats.totalRisks) * 100}%` }} 
+                    />
+                  </div>
+                </div>
+              ))}
+              {riskStats.byLocation.length === 0 && <p className={styles.empty}>No location data available</p>}
+            </div>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={item} className={styles.col}>
+          <Card title="Risks by Assignee" className={styles.chartCard}>
+            <div className={styles.barList}>
+              {riskStats.byAssignee.map((usr) => (
+                <div key={usr.name} className={styles.barItem}>
+                  <div className={styles.barInfo}>
+                    <span className={styles.barLabel}>{usr.name}</span>
+                    <span className={styles.barValue}>{usr.count}</span>
+                  </div>
+                  <div className={styles.progressBar}>
+                    <div 
+                      className={styles.progressFill} 
+                      style={{ width: `${(usr.count / riskStats.totalRisks) * 100}%`, backgroundColor: '#4F46E5' }} 
+                    />
+                  </div>
+                </div>
+              ))}
+              {riskStats.byAssignee.length === 0 && <p className={styles.empty}>No assignee data available</p>}
+            </div>
+          </Card>
+        </motion.div>
+      </div>
+
+      {/* ── Severity Distribution ────────────────── */}
+      <motion.div variants={item}>
+        <Card id="severity-distribution" title="Risks by Severity" className={styles.chartCard}>
+          <div className={styles.severityGrid}>
+            {severityData.map((s) => (
+              <div key={s.label} className={styles.severityItem}>
+                <div className={styles.severityHeader}>
+                  <span className={styles.severityDot} style={{ backgroundColor: s.color }} />
+                  <span className={styles.severityLabel}>{s.label}</span>
+                  <span className={styles.severityCount}>{s.count}</span>
+                </div>
+                <div className={styles.progressBar}>
+                  <div
+                    className={styles.progressFill}
+                    style={{
+                      width: riskTotal > 0 ? `${(s.count / riskTotal) * 100}%` : '0%',
+                      backgroundColor: s.color,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </motion.div>
     </motion.div>
   );
 }
